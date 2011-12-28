@@ -1,8 +1,15 @@
----
-layout: default
-title: VimGolf Digest
----
-<header class="hero-unit">
+<!doctype html>
+
+<html>
+  <head>
+    <title>VimGolf Digest</title>
+    <link rel="stylesheet/less" href="/lib/bootstrap.less">
+    <link rel="stylesheet" href="/css/vimgolfdigest.css">
+    <script src="/js/less-1.1.5.min.js"></script>
+  </head>
+  <body>
+    <div class="container">
+      <header class="hero-unit">
   <h1>VimGolf Digest <small>by Dan Dorman</small></h1>
 </header>
 
@@ -25,9 +32,11 @@ title: VimGolf Digest
   </header>
 
   <ul>
-    {% for post in site.posts %}
-      <li><a href="{{ post.url }}">{{ post.title }}</a></li>
-    {% endfor %}
+    
+      <li><a href="/make-it-more-readable/index.html">Make It More Readable</a></li>
+    
+      <li><a href="/word-blender/index.html">Word Blender</a></li>
+    
   </ul>
 </section>
 
@@ -53,3 +62,11 @@ title: VimGolf Digest
     <a href="https://twitter.com/!#/dandorman">Twitter</a>.
   </p>
 </section>
+
+
+      <footer>
+        <p>&copy; 2011 Dan Dorman</p>
+      </footer>
+    </div>
+  </body>
+</html>

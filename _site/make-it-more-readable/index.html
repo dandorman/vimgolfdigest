@@ -1,0 +1,152 @@
+<!doctype html>
+
+<html>
+  <head>
+    <title>Make It More Readable</title>
+    <link rel="stylesheet/less" href="/lib/bootstrap.less">
+    <link rel="stylesheet" href="/css/vimgolfdigest.css">
+    <script src="/js/less-1.1.5.min.js"></script>
+  </head>
+  <body>
+    <div class="container">
+      <div class="row">
+  <header class="span4">
+    <h1><a href="/">VimGolf Digest</a> <small>by Dan Dorman</small></h1>
+  </header>
+
+  <article class="span12">
+    <h1 id='make_it_more_readable'>Make It More Readable</h1>
+
+<p><a href='http://www.vimgolf.com/challenges/4ef209ef78702b0001000019'>The pertinent challenge</a>.</p>
+
+<p>Say I&#8217;ve got a file (see below) that&#8217;s one long uninterrupted wad of code, interspersed with the occasional comment. It&#8217;s all jammed together with no white space, and I&#8217;d like to &#8230; well, make it more readable. Specifically, by inserting two blank lines before every comment.</p>
+<pre>
+#Set the global prefix key to C-q (default is C-b)
+set-option -g prefix C-q
+bind-key C-q last-window
+# Remove default binding since we’re replacing
+unbind %
+bind | split-window -h
+bind - split-window -v
+# Set status bar
+set -g status-bg black
+set -g status-fg white
+set -g status-left '#[fg=green]#H'
+# Highlight active window
+set-window-option -g window-status-current-bg red
+set -g status-right '#[fg=yellow]#(uptime | cut -d "," -f 2-)'
+# Set window notifications
+setw -g monitor-activity on
+set -g visual-activity on
+# Automatically set window title
+setw -g automatic-rename
+</pre>
+<p>(In the solutions below, I omit the <code>ZZ</code> at the end, which saves and quits the file—saving two characters over the equivalenet <code>:wq&lt;CR&gt;</code>. Hey, every keystroke matters in Vim golf!)</p>
+
+<h2 id='finding_and_replacing_the_substitute_command'>Finding and Replacing: The Substitute Command</h2>
+
+<p>I decided on a simple, straightforward substitute command. There are a couple of caveats about the target file to be aware of:</p>
+
+<ol>
+<li>The first line is a comment, but I don&#8217;t want to insert lines before it.</li>
+
+<li>Some lines have hash characters in the middle of the line, not just the beginning.</li>
+</ol>
+
+<p>With those caveats in mind, here&#8217;s my first attempt:</p>
+
+<pre><code>:2,$s/^#/\r\r#&lt;CR&gt;</code></pre>
+
+<p>This is just shy of a global replace; the <code>2,$</code> at the beginning of the command specifies a <em>range</em> from the second line of the file to the last. This addresses the first caveat.</p>
+
+<p>Ranges, like so much else about Vim, are flexible, powerful &#8230; and cryptic. I can specify line numbers explicitly, such as <code>2</code>. I also have access to a bunch of line-specifying shorthand, such as the <code>$</code>, which translates to &#8220;whatever the last line of the file is.&#8221; (Remember this meaning of <code>$</code>; it will show up again.)</p>
+
+<p>The search string, <code>^#</code>, only finds hashes at the beginning of a line, addressing the second caveat.</p>
+
+<h3 id='work_smarter'>Work Smarter</h3>
+
+<p>The smarter Vim golfers noticed something: <em>All the comments I&#8217;m targeting have a hash followed by a space character</em>. Thus searching for <code># </code> lets me do a straight-up global substitute via the <code>%</code> range shorthand:</p>
+
+<pre><code>:%s/# /\r\r&amp;&lt;CR&gt;</code></pre>
+
+<p>I&#8217;ve long thought of <code>%s</code> as an atomic unit: global find and replace. That could be because I learned about it early on in my Vim days, when I was just learning stuff by rote rather than delving into the vast inner workings of Vim.</p>
+
+<p>But that&#8217;s the wrong way of looking at it. Really, <code>s/foo/bar/</code>, <code>2,$s/foo/bar/</code>, and <code>%s/foo/bar/</code> are all the same underlying <code>substitute</code> command—it&#8217;s just that the latter two cases explicity specify a range. There&#8217;s always a range involved, in fact, but when it&#8217;s not explicity specified, it defaults to <code>.</code>, shorthand for the current line.</p>
+
+<p>Oh, and hey, the ampersand in the replace portion of the command may require some explanation. It gets replaced by the entire match (in this case <code># </code>).</p>
+
+<h3 id='an_interesting_variation'>An Interesting Variation</h3>
+
+<p>This doesn&#8217;t save any characters, but it&#8217;s cool and uses an extra dash of Vim voodoo:</p>
+
+<pre><code>:%s/# /\r&amp;&lt;CR&gt;@:</code></pre>
+
+<p>It looks almost exactly like the last solution, however:</p>
+
+<ul>
+<li>Only one new line gets inserted by the substitute command</li>
+
+<li>There&#8217;s that funky <code>@:</code> at the end</li>
+</ul>
+
+<p>If you&#8217;ve used Vim&#8217;s awesome macro-recording feature, you&#8217;re familiar with the <code>@</code>-letter convention for executing a previously recorded macro. Well, Vim provides some special macros in addition to those you record yourself.</p>
+
+<p>So the <code>@:</code> &#8220;macro&#8221; is a lot like <code>.</code>. You know how <code>.</code> repeats whatever you just did, and it&#8217;s awesome? <code>@:</code> is like that, but re-executes the last Ex command. (As a mnemonic, it may help to remember <code>:</code> is the key press required to enter command mode.)</p>
+
+<p>In this specific case, it re-executes the <code>%s/# /\r&amp;</code> substitute command. I end up with the same result, only one inserted newline at a time.</p>
+
+<h2 id='the_global_command'>The Global Command</h2>
+
+<p>The <code>substitute</code> command I&#8217;ve been using thus far is actually a special case of the <code>global</code> command. With the <code>global</code> command, you specify a search pattern, but not for the sole purpose of replacing the found text. Nope, the search pattern you give to <code>:g</code> just grabs every line in the file that matches the pattern. The second part of the global command is where you tell it what you want to do to all the matching lines.</p>
+
+<h3 id='lame_example'>Lame Example</h3>
+
+<p>As an example, I&#8217;ll re-implement one of the previous solutions as a global command:</p>
+
+<pre><code>:g/# /s/# /\r\r&amp;</code></pre>
+
+<p>Okay, that&#8217;s admittedly pretty lame; I&#8217;m effectively embedding the exact same <code>s</code> command in there. Heck, even the search pattern is repeated. Ugh! (Although repeating the search pattern is not necessary; <code>:g/# /s//\r\r&amp;</code> would work just as well.) But here&#8217;s the takeaway: Everything after the second <code>/</code> is the Ex command to execute on each line. So what if I did something interesting?</p>
+
+<h3 id='awesome'>Awesome</h3>
+
+<p>Here&#8217;s the slick <code>global</code>-command solution several folks came up with:</p>
+
+<pre><code>:g/# /$t-&lt;CR&gt;@:</code></pre>
+
+<p>Ignoring the <code>@:</code> at the end I&#8217;m left with:</p>
+
+<pre><code>:g/# /$t-</code></pre>
+
+<p>So <code>:g/# /</code> fetches all the lines matching <code># </code>. Then, <em>everything after the second <code>/</code></em> is the command to execute against each matched line. In this case, <code>$t-</code>.</p>
+
+<p>The <code>t</code> command is a briefer synonym of the <code>co[py]</code> command. It copies lines from the given range (the stuff before the <code>t</code>) to the line beneath the given address (the stuff after the <code>t</code>).</p>
+
+<p>The <em>from</em> range here is <code>$</code>, which, you may recall from my original attempt, is equivalent to the last line of the file. It just so happens that the last line of the file is a blank line (that&#8217;s hard to tell from the copy/pasted input file above, but it becomes readily apparent when you open the file with <code>vimgolf</code>).</p>
+
+<p>That means the trailing <code>-</code> is the <em>to</em> address. But the <code>-</code> itself is not actually an address; it&#8217;s an address <em>modifier</em>. It subtracts one from the actual address—which is not explicitly specified. However, similar to the <code>substitute</code> command, when no address is specified, it falls back to the current line. In the context of a <code>global</code> command, the current line changes to each matched line as it is processed.</p>
+
+<p>The modifier is necessary because <code>t</code> copies its lines <em>beneath</em> the target address; I&#8217;d end up with blank lines underneath the comments instead of above them.</p>
+
+<p>With three magical characters, I copy the blank line from the bottom of the file, and paste it underneath the lines immediately preceding the comments. Another way of saying that is I&#8217;m pasting a blank line <em>before</em> the comments. Follow that up with the handy <code>@:</code> command, and I&#8217;ve got myself some nicely separated chunks of comment-prefixed code.</p>
+
+<h2 id='further_reading'>Further Reading</h2>
+
+<p>As always, Vim&#8217;s extensive documentation is useful for finding out more about this. Here&#8217;s some online resources for finding out more:</p>
+
+<ul>
+<li><a href='http://vimhelp.appspot.com/cmdline.txt.html#cmdline-ranges'>Ranges</a></li>
+
+<li><a href='http://vimhelp.appspot.com/repeat.txt.html#multi-repeat'>The Global Command</a></li>
+
+<li><a href='http://vim.wikia.com/wiki/Power_of_g'>&#8220;Power of g&#8221;</a>, by Arun Esai</li>
+</ul>
+  </article>
+</div>
+
+
+      <footer>
+        <p>&copy; 2011 Dan Dorman</p>
+      </footer>
+    </div>
+  </body>
+</html>

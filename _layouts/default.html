@@ -1,0 +1,18 @@
+<!doctype html>
+
+<html>
+  <head>
+    <title>{{ page.title }}</title>
+    <link rel="stylesheet/less" href="/lib/bootstrap.less">
+    <script src="/js/less-1.1.5.min.js"></script>
+  </head>
+  <body>
+    <div class="container">
+      {{ content }}
+
+      <footer>
+        <p>&copy; {{ site.time | date: '%Y' }} Dan Dorman</p>
+      </footer>
+    </div>
+  </body>
+</html>
